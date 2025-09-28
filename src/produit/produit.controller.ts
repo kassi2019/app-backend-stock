@@ -152,6 +152,35 @@ export class ProduitController {
         const userId = req.user.sub;
         return this.produitService.afficheListeProduitPourSortie(userId);
     }
+
+    @Get('listeProduitInventaire')
+    afficheListeLotParProduitInventaire(@Req() req: any) {
+        const userId = req.user.sub;
+        return this.produitService.afficheListeLotParProduitInventaire();
+    }
+
+
+
+
+
+
+
+
+
+    @Put(':id/quantite-theorique')
+
+    async updateQuantiteTheorique(@Param('id') id: number,
+
+        @Param('quantiteTheorique') quantiteTheorique: number,
+        @Req() req: any) {
+        const userId = req.user.sub;
+        const result = await this.produitService.mettreAJourQuantiteTheorique(Number(id), quantiteTheorique, userId);
+        return {
+            statusCode: HttpStatus.OK,
+            message: 'Modification réussie',
+            data: result,
+        };
+    }
 }
 
 
