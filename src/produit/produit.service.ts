@@ -448,7 +448,10 @@ export class ProduitService {
 
         // Récupérer le lot actuel
         const lot = await this.prisma.tb_produit_lot.findUnique({
-            where: { id: Number(lotId) },
+            where: {
+                id: Number(lotId),
+                user_respo_id: Number(userId)
+            },
         });
 
         if (!lot) {
