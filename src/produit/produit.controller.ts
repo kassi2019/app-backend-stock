@@ -162,19 +162,57 @@ export class ProduitController {
 
 
 
-
-
-
-
-
-    @Put(':id/quantite-theorique')
-
-    async updateQuantiteTheorique(@Param('id') id: number,
-
-        @Param('quantiteTheorique') quantiteTheorique: number,
-        @Req() req: any) {
+    @Get('listeProduitInventaireValide')
+    afficheListeLotParProduitValide(@Req() req: any) {
         const userId = req.user.sub;
-        const result = await this.produitService.mettreAJourQuantiteTheorique(Number(id), quantiteTheorique, userId);
+        return this.produitService.afficheListeLotParProduitValide();
+    }
+
+
+
+
+    // @Put(':id/quantite-theorique')
+
+    // async updateQuantiteTheorique(@Param('id') id: number,
+
+    //     @Param('quantiteTheorique') quantiteTheorique: number,
+    //     @Req() req: any) {
+    //     const userId = req.user.sub;
+    //     const result = await this.produitService.mettreAJourQuantiteTheorique(Number(id), quantiteTheorique, userId);
+    //     return {
+    //         statusCode: HttpStatus.OK,
+    //         message: 'Modification réussie',
+    //         data: result,
+    //     };
+    // }
+
+
+    @Get("miseAjourQuantite/:idlot/:quantiteLot")
+    async getmettreAJourQuantite(
+        @Param("idlot") idlot: number,
+        @Param('quantiteLot') quantiteLot: number,
+        @Req() req: any
+    ) {
+        const userId = req.user.sub;
+        const result = await this.produitService.mettreAJourQuantiteTheorique(idlot, quantiteLot, userId);
+        return {
+            statusCode: HttpStatus.OK,
+            message: 'Modification réussie',
+            data: result,
+        };
+    }
+
+
+
+
+    @Get("ramenerQuantite/:idlot")
+    async getRamenerQuantite(
+        @Param("idlot") idlot: number,
+
+        @Req() req: any
+    ) {
+        const userId = req.user.sub;
+        const result = await this.produitService.RamenerQuantiteTheorique(idlot, userId);
         return {
             statusCode: HttpStatus.OK,
             message: 'Modification réussie',

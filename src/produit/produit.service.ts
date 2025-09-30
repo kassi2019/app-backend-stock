@@ -285,7 +285,6 @@ export class ProduitService {
     }
 
 
-
     async afficheListeProduitPourSortie(userId: number) {
         const lots = await this.prisma.tb_stock_temporel.findMany({
             where: {
@@ -296,26 +295,38 @@ export class ProduitService {
             include: {
                 tb_produit: {
                     include: {
-                        tb_produit_lot: true, // inclusion de la table lot_produit
+                        tb_produit_lot: {
+                            where: { statut_inventaire: 1 }, // filtre côté Prisma
+                        },
+                        tb_vente_detail: true,
                     },
                 },
+
             },
         });
 
-        // Calculer la somme des quantités
         const lotsAvecSomme = lots.map((lot) => {
             const totalQuantite = lot.tb_produit.tb_produit_lot.reduce(
                 (acc, lp) => acc + (lp.quantite || 0),
                 0
             );
+
+            const venduQuantite = lot.tb_produit.tb_vente_detail.reduce(
+                (acc, vd) => acc + (vd.quantite || 0),
+                0
+            );
+
             return {
                 ...lot,
-                totalQuantite
+                totalQuantite,
+                venduQuantite,
+                resteDisponible: totalQuantite - venduQuantite,
             };
         });
 
         return lotsAvecSomme;
     }
+
 
 
 
@@ -362,11 +373,11 @@ export class ProduitService {
 
 
 
-    async mettreAJourQuantiteTheorique(lotId: number, quantiteTheorique: number, userId: number) {
-       
+    async mettreAJourQuantiteTheorique(lotId: number, quantiteLot: number, userId: number) {
+
         // Récupérer le lot actuel
         const lot = await this.prisma.tb_produit_lot.findUnique({
-            where: { id: lotId },
+            where: { id: Number(lotId) },
         });
 
         if (!lot) {
@@ -374,14 +385,81 @@ export class ProduitService {
         }
 
         // Déterminer le statut_inventaire
-        const statut_inventaire = lot.quantite === quantiteTheorique ? 1 : 2;
+        const statut_inventaire = lot.quantite === Number(quantiteLot) ? 1 : 2;
 
         // Mettre à jour le lot
         return await this.prisma.tb_produit_lot.update({
-            where: { id: lotId },
+            where: { id: Number(lotId) },
             data: {
-                quantite_theorique: quantiteTheorique,
-                statut_inventaire: statut_inventaire,
+                quantite_theorique: Number(quantiteLot),
+                statut_inventaire: Number(statut_inventaire),
+                user_respo_id: userId ?? 0,
+            },
+        });
+    }
+
+
+
+
+
+    async afficheListeLotParProduitValide() {
+        const lots = await this.prisma.tb_produit_lot.findMany({
+            where: { statut_inventaire: 1 },
+            include: {
+                tb_produit: true,
+                users: true,
+            },
+        });
+
+        if (!lots || lots.length === 0) {
+            return [];
+        }
+
+        // On regroupe les lots par produit
+        const produitsMap = new Map();
+
+        lots.forEach((lot) => {
+            const produitId = lot.produit_id;
+
+            if (!produitsMap.has(produitId)) {
+                produitsMap.set(produitId, {
+                    produit: lot.tb_produit,
+                    lots: [],
+                });
+            }
+
+            produitsMap.get(produitId).lots.push({
+                code_lot: lot.code_lot,
+                expiration_date: lot.expiration_date,
+                quantite: lot.quantite,
+                prix_achat: lot.prix_achat,
+                quantite_theorique: lot.quantite_theorique,
+                id: lot.id,
+                idProduit: lot.produit_id,
+                user: lot.users,
+            });
+        });
+
+        return Array.from(produitsMap.values());
+    }
+
+
+    async RamenerQuantiteTheorique(lotId: number, userId: number) {
+
+        // Récupérer le lot actuel
+        const lot = await this.prisma.tb_produit_lot.findUnique({
+            where: { id: Number(lotId) },
+        });
+
+        if (!lot) {
+            throw new Error('Lot non trouvé');
+        }
+        // Mettre à jour le lot
+        return await this.prisma.tb_produit_lot.update({
+            where: { id: Number(lotId) },
+            data: {
+                quantite_theorique: Number(0),
+                statut_inventaire: Number(0),
                 user_respo_id: userId ?? 0,
             },
         });

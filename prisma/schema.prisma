@@ -75,6 +75,7 @@ model tb_produit {
   user_id           Int?
   tb_produit_lot    tb_produit_lot[]
   tb_stock_temporel tb_stock_temporel[]
+  tb_vente_detail   tb_vente_detail[]
 }
 
 model tb_produit_lot {
@@ -139,17 +140,19 @@ model tb_vente {
 }
 
 model tb_vente_detail {
-  id            Int      @id @default(autoincrement())
+  id            Int        @id @default(autoincrement())
   vente_id      Int
   produit_id    Int
   quantite      Int
-  prix_unitaire Decimal  @db.Decimal(15, 2)
-  created_at    DateTime @default(now()) @db.Timestamp(0)
-  total         Decimal  @db.Decimal(15, 2)
+  prix_unitaire Decimal    @db.Decimal(15, 2)
+  created_at    DateTime   @default(now()) @db.Timestamp(0)
+  total         Decimal    @db.Decimal(15, 2)
   user_id       Int?
-  tb_vente      tb_vente @relation(fields: [vente_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "tb_vente_detail_ibfk_1")
+  tb_produit    tb_produit @relation(fields: [produit_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_tb_vente_detail_tb_produit")
+  tb_vente      tb_vente   @relation(fields: [vente_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "tb_vente_detail_ibfk_1")
 
   @@index([vente_id], map: "vente_id")
+  @@index([produit_id], map: "FK_tb_vente_detail_tb_produit")
 }
 
 model tb_fournisseur {
