@@ -19,11 +19,13 @@ import { CategorieProduitController } from './categorie-produit/categorie-produi
 import { CategorieProduitModule } from './categorie-produit/categorie-produit.module';
 import { CategorieProduitService } from './categorie-produit/categorie-produit.service';
 import { VenteModule } from './vente/vente.module';
+import { EntrepriseModule } from './entreprise/entreprise.module';
+import { CategoriefournisseurModule } from './categoriefournisseur/categoriefournisseur.module';
 
 
 
 @Module({
-  imports: [AuthModule, UserModule, PrismaModule, TypeEquipementModule, RolesModule, TypeMouvementModule, MouvementModule, ProduitModule, ProduitLotModule, CategorieProduitModule, VenteModule],
+  imports: [AuthModule, UserModule, PrismaModule, TypeEquipementModule, RolesModule, TypeMouvementModule, MouvementModule, ProduitModule, ProduitLotModule, CategorieProduitModule, VenteModule, EntrepriseModule, CategoriefournisseurModule],
   controllers: [AppController, ProduitController, CategorieProduitController],
   providers: [AppService, ProduitService, ProduitLotService, CategorieProduitService],
 })

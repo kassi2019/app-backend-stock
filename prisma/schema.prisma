@@ -106,17 +106,6 @@ model tb_type_mouvement {
   update_at  DateTime? @db.DateTime(0)
 }
 
-model tb_stock_mouvements {
-  id               Int       @id @default(autoincrement())
-  produit_id       Int
-  type_movement_id Int       @default(0)
-  mouvement_id     Int       @default(0)
-  quantite         Int       @default(0)
-  created_at       DateTime? @default(now()) @db.Timestamp(0)
-  updated_at       DateTime? @db.DateTime(0)
-  user_id          Int
-}
-
 model tb_stock_temporel {
   id         Int        @id @default(autoincrement())
   produit_id Int
@@ -156,9 +145,34 @@ model tb_vente_detail {
 }
 
 model tb_fournisseur {
-  id              Int       @id @default(autoincrement())
-  nom_fournisseur Int?
-  telephone       Int?
-  created_at      DateTime? @default(now()) @db.Timestamp(0)
-  updated_at      DateTime? @db.Timestamp(0)
+  id                  Int                       @id @default(autoincrement())
+  nom_fournisseur     String?                   @db.VarChar(100)
+  telephone           String?                   @db.VarChar(50)
+  created_at          DateTime?                 @default(now()) @db.Timestamp(0)
+  updated_at          DateTime?                 @db.Timestamp(0)
+  user_id             Int?
+  type_fournisseur_id Int?
+  tb_type_fournisseur tb_categorie_fournisseur? @relation(fields: [type_fournisseur_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_tb_fournisseur_tb_type_fournisseur")
+
+  @@index([type_fournisseur_id], map: "FK_tb_fournisseur_tb_type_fournisseur")
+}
+
+model tb_autre_stock {
+  id               Int       @id @default(autoincrement())
+  produit_id       Int
+  lot_produit_id   Int
+  type_movement_id Int       @default(0)
+  quantite         Int       @default(0)
+  created_at       DateTime? @default(now()) @db.Timestamp(0)
+  updated_at       DateTime? @db.DateTime(0)
+  user_id          Int
+}
+
+model tb_categorie_fournisseur {
+  id             Int              @id @default(autoincrement())
+  libelle        String?          @db.VarChar(100)
+  created_at     DateTime?        @default(now()) @db.DateTime(0)
+  updated_at     DateTime?        @db.DateTime(0)
+  user_id        Int?
+  tb_fournisseur tb_fournisseur[]
 }
