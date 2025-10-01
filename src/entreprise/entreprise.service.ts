@@ -69,6 +69,7 @@ export class EntrepriseService {
       produitsMap.get(produitId).lots.push({
         nom_fournisseur: lot.nom_fournisseur,
         telephone: lot.telephone,
+        type_fournisseur_id: lot.type_fournisseur_id,
         id: lot.id,
 
       });
