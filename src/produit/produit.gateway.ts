@@ -32,4 +32,8 @@ export class ProduitGateway {
      notifyProduitStockTemporelUpdated(produitstock: any) {
         this.server.emit('produitstockUpdated', produitstock);
     }
+
+     envoyerMaj(data: any) {
+    this.server.emit('majTableauBord', data);
+  }
 }

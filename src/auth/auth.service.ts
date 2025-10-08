@@ -51,7 +51,7 @@ export class AuthService {
   async login(matricule: string, password: string) {
     const user = await this.prisma.users.findFirst({
       where: { matricule },
-      include: { roleRelation: true }, // 🔑 Inclure le rôle
+      include: { tb_roles: true }, // 🔑 Inclure le rôle
     });
   
     if (!user || !(await bcrypt.compare(password, user.password))) {
@@ -77,7 +77,7 @@ export class AuthService {
     // }
   
     // 🔥 Récupération du code du rôle (ADMIN, ASC, SUPERV...)
-    const roleCode = user.roleRelation || ''; // Défaut : ASC
+    const roleCode = user.tb_roles || ''; // Défaut : ASC
     
     // Générer le token JWT avec le rôle
     const payload = { sub: user.id, matricule: user.matricule, role: roleCode };

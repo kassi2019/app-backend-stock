@@ -65,6 +65,9 @@ export class ProduitLotDtoCreate {
 
   prix_achat?: number;
 
+  @IsInt()
+  @IsOptional()
+  fournisseur_id?: number
 
 
 }

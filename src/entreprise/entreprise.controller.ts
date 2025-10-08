@@ -23,7 +23,7 @@ export class EntrepriseController {
     };
   }
 
-  @Get()
+
   @Get('liste')
   async findAll() {
     const result = await this.entrepriseService.findAll();

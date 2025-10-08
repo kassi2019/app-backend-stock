@@ -117,28 +117,33 @@ export class ProduitService {
 
     // afficher quantite initial et actual par produit
     async AfficherQuantiteParProduit(code_barre: string) {
-
-        const idProduit = await this.prisma.tb_produit.findFirst({
-            where: { code_barre: String(code_barre) },
+        const produit = await this.prisma.tb_produit.findFirst({
+            where: { code_barre },
+            include: {
+                tb_produit_lot: {
+                    select: { quantite: true },
+                },
+                tb_vente_detail: {
+                    select: { quantite: true },
+                },
+            },
         });
 
-        if (!idProduit) {
-            return 0;
-        }
+        if (!produit) return 0;
 
-        const lots = await this.prisma.tb_produit_lot.findMany({
-            where: { produit_id: idProduit.id },
-        });
+        const sommeLots = produit.tb_produit_lot.reduce(
+            (acc, lot) => acc + Number(lot.quantite || 0),
+            0,
+        );
 
-        const mouvements = await this.prisma.tb_stock_mouvements.findMany({
-            where: { produit_id: idProduit.id },
-        });
-
-        const sommeLots = lots.reduce((acc, lot) => acc + Number(lot.quantite || 0), 0);
-        const sommeMouvements = mouvements.reduce((acc, mvt) => acc + Number(mvt.quantite || 0), 0);
+        const sommeMouvements = produit.tb_vente_detail.reduce(
+            (acc, mvt) => acc + Number(mvt.quantite || 0),
+            0,
+        );
 
         return sommeLots - sommeMouvements;
     }
+
 
 
     async enregistrerProduitStock(
@@ -173,20 +178,27 @@ export class ProduitService {
             // 🚀 Notifier en temps réel les clients web
             this.produitGateway.notifyProduitUpdated(updatedProduit);
         }
-        const expirationDate = data1.expiration_date?.trim();
-        const dateProduit = expirationDate
-            ? new Date(expirationDate).toISOString().split("T")[0]
+        // const expirationDate = data1.expiration_date?.trim();
+        // const dateProduit = expirationDate
+        //     ? new Date(expirationDate).toISOString().split("T")[0]
+        //     : null;
+
+
+        const expirationDateStr = data1.expiration_date; // exemple depuis le frontend
+        const expirationDate = expirationDateStr
+            ? new Date(`${expirationDateStr}T00:00:00.000Z`)
             : null;
         // Dans tous les cas, on ajoute un lot
         const lot = await this.prisma.tb_produit_lot.create({
             data: {
                 produit_id: produit.id,
                 code_lot: data1.code_lot,
-                expiration_date: dateProduit,
+                expiration_date: expirationDate,
                 quantite: Number(data1.quantite),
                 prix_achat: Number(data1.prix_achat),
                 user_id: userId ?? 0,
                 user_respo_id: userId ?? 0, // Ajout de la propriété obligatoire
+                fournisseur_id: Number(data1.fournisseur_id),
             },
         });
         return { produit: updatedProduit, lot };
@@ -388,7 +400,7 @@ export class ProduitService {
         const statut_inventaire = lot.quantite === Number(quantiteLot) ? 1 : 2;
 
         // Mettre à jour le lot
-        return await this.prisma.tb_produit_lot.update({
+        const produitlot = await this.prisma.tb_produit_lot.update({
             where: { id: Number(lotId) },
             data: {
                 quantite_theorique: Number(quantiteLot),
@@ -396,6 +408,9 @@ export class ProduitService {
                 user_respo_id: userId ?? 0,
             },
         });
+
+        this.produitGateway.notifyProduitStockTemporelUpdated(produitlot);
+        return produitlot;
     }
 
 
@@ -470,7 +485,7 @@ export class ProduitService {
 
 
 
-    
+
 }
 
 

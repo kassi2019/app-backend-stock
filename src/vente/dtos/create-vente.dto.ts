@@ -16,6 +16,10 @@ class VenteDetailDto {
 
     @IsNumber()
     total?: number;
+
+    @IsNumber()
+    @Type(() => Number)
+    stock_temporel_id?: number
 }
 
 export class CreateVenteDto {
@@ -29,10 +33,12 @@ export class CreateVenteDto {
 
     @IsNumber()
     @Type(() => Number)
-    monnaie_rendu?: number  | undefined;
+    monnaie_rendu?: number | undefined;
 
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => VenteDetailDto)
     tb_vente_detail?: VenteDetailDto[];
+
+
 }

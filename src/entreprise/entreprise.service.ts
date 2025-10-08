@@ -45,7 +45,7 @@ export class EntrepriseService {
     const lots = await this.prisma.tb_fournisseur.findMany({
 
       include: {
-        tb_type_fournisseur: true,
+        tb_categorie_fournisseur: true,
       },
     });
 
@@ -61,7 +61,7 @@ export class EntrepriseService {
 
       if (!produitsMap.has(produitId)) {
         produitsMap.set(produitId, {
-          produit: lot.tb_type_fournisseur,
+          produit: lot.tb_categorie_fournisseur,
           lots: [],
         });
       }

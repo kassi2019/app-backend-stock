@@ -74,6 +74,7 @@ export class VenteService {
                         prix_unitaire: d.prix_unitaire ?? 0,
                         total: d.total ?? 0,
                         user_id: userId ?? 0,
+                        stock_temporel_id: d.stock_temporel_id
                     })),
                 },
             },

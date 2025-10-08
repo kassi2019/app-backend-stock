@@ -64,14 +64,14 @@ export class UsersService {
         const user = await this.prisma.users.findUnique({
 
             where: { id: userId },
-            include: { roleRelation: true },
+            include: { tb_roles: true },
         });
 
         if (!user) {
             throw new BadRequestException('Utilisateur introuvable');
         }
 
-        const roleCode = user.roleRelation || '';
+        const roleCode = user.tb_roles || '';
         return {
             id: Number(user.id),
             matricule: user.matricule,
@@ -93,7 +93,7 @@ export class UsersService {
         const data = await this.prisma.users.findMany(
             {
                 include: {
-                    roleRelation: true, // jointure avec la table role
+                    tb_roles: true, // jointure avec la table role
                 },
                 orderBy: {
                     nom_utilisateur: 'asc', // mieux que sort côté JS

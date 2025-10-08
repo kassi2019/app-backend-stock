@@ -7,43 +7,29 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model tb_roles {
-  id                            Int       @id @default(autoincrement())
-  code                          String?   @db.VarChar(15)
-  libelle                       String?   @db.VarChar(50)
-  created_at                    DateTime? @default(now()) @db.DateTime(0)
-  updated_at                    DateTime? @db.DateTime(0)
-  user_id                       Int?      @db.UnsignedInt
-  users_users_role_idTotb_roles users[]   @relation("users_role_idTotb_roles")
+model tb_autre_stock {
+  id             Int            @id @default(autoincrement())
+  produit_id     Int
+  lot_produit_id Int
+  movement_id    Int            @default(0)
+  quantite       Int            @default(0)
+  created_at     DateTime?      @default(now()) @db.Timestamp(0)
+  updated_at     DateTime?      @db.DateTime(0)
+  user_id        Int
+  tb_produit     tb_produit     @relation(fields: [produit_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_tb_autre_stock_tb_produit")
+  tb_produit_lot tb_produit_lot @relation(fields: [lot_produit_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_tb_autre_stock_tb_produit_lot")
+
+  @@index([produit_id], map: "FK_tb_autre_stock_tb_produit")
+  @@index([lot_produit_id], map: "FK_tb_autre_stock_tb_produit_lot")
 }
 
-model users {
-  id              Int              @id @default(autoincrement()) @db.UnsignedInt
-  noms_prenoms    String           @db.VarChar(255)
-  nom_utilisateur String           @db.VarChar(50)
-  password        String           @db.VarChar(255)
-  created_at      DateTime?        @default(now()) @db.DateTime(0)
-  updated_at      DateTime?        @db.DateTime(0)
-  matricule       String?          @unique(map: "matricule") @db.VarChar(50)
-  role_id         Int?
-  photoUrl        String?          @db.VarChar(255)
-  user_id         Int?             @default(0)
-  tb_produit_lot  tb_produit_lot[]
-  user_sessions   user_sessions[]
-  roleRelation    tb_roles?        @relation("users_role_idTotb_roles", fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_users_tb_roles")
-
-  @@index([role_id], map: "FK_users_tb_roles")
-}
-
-model user_sessions {
-  id         Int       @id @default(autoincrement())
-  userId     Int?      @db.UnsignedInt
-  token      String?   @db.VarChar(2000)
-  created_at DateTime? @default(now()) @db.DateTime(0)
-  expires_at DateTime? @default(now()) @db.DateTime(0)
-  users      users?    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK__users")
-
-  @@index([userId], map: "FK__users")
+model tb_categorie_fournisseur {
+  id             Int              @id @default(autoincrement())
+  libelle        String?          @db.VarChar(255)
+  created_at     DateTime?        @default(now()) @db.DateTime(0)
+  updated_at     DateTime?        @db.DateTime(0)
+  user_id        Int?
+  tb_fournisseur tb_fournisseur[]
 }
 
 model tb_categorie_produit {
@@ -52,6 +38,19 @@ model tb_categorie_produit {
   created_at DateTime? @default(now()) @db.DateTime(0)
   updated_at DateTime? @db.DateTime(0)
   user_id    Int?      @db.UnsignedInt
+}
+
+model tb_fournisseur {
+  id                       Int                       @id @default(autoincrement())
+  nom_fournisseur          String?                   @db.VarChar(100)
+  telephone                String?                   @db.VarChar(50)
+  created_at               DateTime?                 @default(now()) @db.Timestamp(0)
+  updated_at               DateTime?                 @db.Timestamp(0)
+  user_id                  Int?
+  type_fournisseur_id      Int?
+  tb_categorie_fournisseur tb_categorie_fournisseur? @relation(fields: [type_fournisseur_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_tb_fournisseur_tb_type_fournisseur")
+
+  @@index([type_fournisseur_id], map: "FK_tb_fournisseur_tb_type_fournisseur")
 }
 
 model tb_mouvement {
@@ -73,29 +72,55 @@ model tb_produit {
   created_at        DateTime?           @default(now()) @db.Timestamp(0)
   updated_at        DateTime?           @db.DateTime(0)
   user_id           Int?
+  tb_autre_stock    tb_autre_stock[]
   tb_produit_lot    tb_produit_lot[]
   tb_stock_temporel tb_stock_temporel[]
   tb_vente_detail   tb_vente_detail[]
 }
 
 model tb_produit_lot {
-  id                 Int        @id @default(autoincrement())
+  id                 Int              @id @default(autoincrement())
   produit_id         Int
-  code_lot           String?    @db.VarChar(100)
-  expiration_date    String?    @db.VarChar(50)
-  quantite           Int        @default(0)
-  quantite_theorique Int        @default(0)
-  statut_inventaire  Int        @default(0) @db.TinyInt
-  user_id            Int        @db.UnsignedInt
-  user_respo_id      Int        @db.UnsignedInt
-  created_at         DateTime?  @default(now()) @db.Timestamp(0)
-  updated_at         DateTime?  @db.DateTime(0)
-  prix_achat         Int?       @default(0)
-  tb_produit         tb_produit @relation(fields: [produit_id], references: [id], onDelete: Cascade, map: "FK_tb_produit_lot_tb_produit")
-  users              users      @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_tb_produit_lot_users")
+  code_lot           String?          @db.VarChar(100)
+  expiration_date    DateTime?        @db.Date
+  quantite           Int              @default(0)
+  quantite_theorique Int              @default(0)
+  statut_inventaire  Int              @default(0) @db.TinyInt
+  user_id            Int              @db.UnsignedInt
+  fournisseur_id     Int              @db.UnsignedInt
+  user_respo_id      Int              @db.UnsignedInt
+  created_at         DateTime?        @default(now()) @db.Timestamp(0)
+  updated_at         DateTime?        @db.DateTime(0)
+  prix_achat         Int?             @default(0)
+  tb_autre_stock     tb_autre_stock[]
+  tb_produit         tb_produit       @relation(fields: [produit_id], references: [id], onDelete: Cascade, map: "FK_tb_produit_lot_tb_produit")
+  users              users            @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_tb_produit_lot_users")
 
   @@index([produit_id], map: "FK_tb_produit_lot_tb_produit")
   @@index([user_id], map: "FK_tb_produit_lot_users")
+}
+
+model tb_roles {
+  id         Int       @id @default(autoincrement())
+  code       String?   @db.VarChar(15)
+  libelle    String?   @db.VarChar(50)
+  created_at DateTime? @default(now()) @db.DateTime(0)
+  updated_at DateTime? @db.DateTime(0)
+  user_id    Int?      @db.UnsignedInt
+  users      users[]
+}
+
+model tb_stock_temporel {
+  id              Int               @id @default(autoincrement())
+  produit_id      Int
+  created_at      DateTime?         @default(now()) @db.Timestamp(0)
+  updated_at      DateTime?         @db.DateTime(0)
+  user_id         Int
+  statut          Int?              @default(0)
+  tb_produit      tb_produit        @relation(fields: [produit_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_tb_stock_temporel_tb_produit")
+  tb_vente_detail tb_vente_detail[]
+
+  @@index([produit_id], map: "FK_tb_stock_temporel_tb_produit_lot")
 }
 
 model tb_type_mouvement {
@@ -104,18 +129,6 @@ model tb_type_mouvement {
   user_id    Int?
   created_at DateTime? @default(now()) @db.DateTime(0)
   update_at  DateTime? @db.DateTime(0)
-}
-
-model tb_stock_temporel {
-  id         Int        @id @default(autoincrement())
-  produit_id Int
-  created_at DateTime?  @default(now()) @db.Timestamp(0)
-  updated_at DateTime?  @db.DateTime(0)
-  user_id    Int
-  statut     Int?       @default(0)
-  tb_produit tb_produit @relation(fields: [produit_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_tb_stock_temporel_tb_produit")
-
-  @@index([produit_id], map: "FK_tb_stock_temporel_tb_produit_lot")
 }
 
 model tb_vente {
@@ -129,50 +142,49 @@ model tb_vente {
 }
 
 model tb_vente_detail {
-  id            Int        @id @default(autoincrement())
-  vente_id      Int
-  produit_id    Int
-  quantite      Int
-  prix_unitaire Decimal    @db.Decimal(15, 2)
-  created_at    DateTime   @default(now()) @db.Timestamp(0)
-  total         Decimal    @db.Decimal(15, 2)
-  user_id       Int?
-  tb_produit    tb_produit @relation(fields: [produit_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_tb_vente_detail_tb_produit")
-  tb_vente      tb_vente   @relation(fields: [vente_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "tb_vente_detail_ibfk_1")
+  id                Int                @id @default(autoincrement())
+  vente_id          Int
+  produit_id        Int
+  quantite          Int
+  prix_unitaire     Decimal            @db.Decimal(15, 2)
+  created_at        DateTime           @default(now()) @db.Timestamp(0)
+  total             Decimal            @db.Decimal(15, 2)
+  user_id           Int?
+  stock_temporel_id Int?
+  tb_produit        tb_produit         @relation(fields: [produit_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_tb_vente_detail_tb_produit")
+  tb_stock_temporel tb_stock_temporel? @relation(fields: [stock_temporel_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_tb_vente_detail_tb_stock_temporel")
+  tb_vente          tb_vente           @relation(fields: [vente_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "tb_vente_detail_ibfk_1")
 
-  @@index([vente_id], map: "vente_id")
   @@index([produit_id], map: "FK_tb_vente_detail_tb_produit")
+  @@index([stock_temporel_id], map: "FK_tb_vente_detail_tb_stock_temporel")
+  @@index([vente_id], map: "vente_id")
 }
 
-model tb_fournisseur {
-  id                  Int                       @id @default(autoincrement())
-  nom_fournisseur     String?                   @db.VarChar(100)
-  telephone           String?                   @db.VarChar(50)
-  created_at          DateTime?                 @default(now()) @db.Timestamp(0)
-  updated_at          DateTime?                 @db.Timestamp(0)
-  user_id             Int?
-  type_fournisseur_id Int?
-  tb_type_fournisseur tb_categorie_fournisseur? @relation(fields: [type_fournisseur_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_tb_fournisseur_tb_type_fournisseur")
+model user_sessions {
+  id         Int       @id @default(autoincrement())
+  userId     Int?      @db.UnsignedInt
+  token      String?   @db.VarChar(2000)
+  created_at DateTime? @default(now()) @db.DateTime(0)
+  expires_at DateTime? @default(now()) @db.DateTime(0)
+  users      users?    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK__users")
 
-  @@index([type_fournisseur_id], map: "FK_tb_fournisseur_tb_type_fournisseur")
+  @@index([userId], map: "FK__users")
 }
 
-model tb_autre_stock {
-  id               Int       @id @default(autoincrement())
-  produit_id       Int
-  lot_produit_id   Int
-  type_movement_id Int       @default(0)
-  quantite         Int       @default(0)
-  created_at       DateTime? @default(now()) @db.Timestamp(0)
-  updated_at       DateTime? @db.DateTime(0)
-  user_id          Int
-}
+model users {
+  id              Int              @id @default(autoincrement()) @db.UnsignedInt
+  noms_prenoms    String           @db.VarChar(255)
+  nom_utilisateur String           @db.VarChar(50)
+  password        String           @db.VarChar(255)
+  created_at      DateTime?        @default(now()) @db.DateTime(0)
+  updated_at      DateTime?        @db.DateTime(0)
+  matricule       String?          @unique(map: "matricule") @db.VarChar(50)
+  role_id         Int?
+  photoUrl        String?          @db.VarChar(255)
+  user_id         Int?             @default(0)
+  tb_produit_lot  tb_produit_lot[]
+  user_sessions   user_sessions[]
+  tb_roles        tb_roles?        @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_users_tb_roles")
 
-model tb_categorie_fournisseur {
-  id             Int              @id @default(autoincrement())
-  libelle        String?          @db.VarChar(100)
-  created_at     DateTime?        @default(now()) @db.DateTime(0)
-  updated_at     DateTime?        @db.DateTime(0)
-  user_id        Int?
-  tb_fournisseur tb_fournisseur[]
+  @@index([role_id], map: "FK_users_tb_roles")
 }

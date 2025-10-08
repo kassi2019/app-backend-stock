@@ -21,11 +21,13 @@ import { CategorieProduitService } from './categorie-produit/categorie-produit.s
 import { VenteModule } from './vente/vente.module';
 import { EntrepriseModule } from './entreprise/entreprise.module';
 import { CategoriefournisseurModule } from './categoriefournisseur/categoriefournisseur.module';
+import { TableauBordModule } from './tableau-bord/tableau-bord.module';
+import { AutreStockModule } from './autre-stock/autre-stock.module';
 
 
 
 @Module({
-  imports: [AuthModule, UserModule, PrismaModule, TypeEquipementModule, RolesModule, TypeMouvementModule, MouvementModule, ProduitModule, ProduitLotModule, CategorieProduitModule, VenteModule, EntrepriseModule, CategoriefournisseurModule],
+  imports: [AuthModule, UserModule, PrismaModule, TypeEquipementModule, RolesModule, TypeMouvementModule, MouvementModule, ProduitModule, ProduitLotModule, CategorieProduitModule, VenteModule, EntrepriseModule, CategoriefournisseurModule, TableauBordModule, AutreStockModule],
   controllers: [AppController, ProduitController, CategorieProduitController],
   providers: [AppService, ProduitService, ProduitLotService, CategorieProduitService],
 })
