@@ -1,4 +1,4 @@
-import { Controller, Post, UseGuards } from '@nestjs/common';
+import { Controller, Post, Put, UseGuards } from '@nestjs/common';
 import { AutreStockService } from './autre-stock.service';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
 
@@ -11,5 +11,9 @@ export class AutreStockController {
   async verifierExpiration() {
     await this.autreStockService.verifierLotsExpires();
     return { message: 'Vérification manuelle effectuée' };
+  }
+  @Put('produitdetruit/:id')
+  async modifierMouvement(id: number) {
+    return this.autreStockService.modifierMouvement(id);
   }
 }

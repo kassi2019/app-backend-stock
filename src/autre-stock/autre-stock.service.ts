@@ -48,7 +48,8 @@ export class AutreStockService {
                         lot_produit_id: lot.id,
                         quantite: lot.quantite, // ou autre champ selon besoin
                         user_id: 1, // Remplacez 1 par l'ID utilisateur approprié
-                        movement_id: 5,
+                        mouvement_id: 5,
+                        statut:"0"
                     },
                 });
                 if (lot.statut_inventaire === 1) {
@@ -70,5 +71,15 @@ export class AutreStockService {
         }
 
         this.logger.log('🏁 Vérification terminée.');
+    }
+
+
+
+    // cette fonction permet de modifier la table autre stock en mettant mouvement a 6 
+    async modifierMouvement(id: number) {
+        return await this.prisma.tb_autre_stock.update({
+            where: { id: Number(id) },
+            data: { mouvement_id: 6 },
+        });
     }
 }

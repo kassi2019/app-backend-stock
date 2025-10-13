@@ -11,11 +11,12 @@ model tb_autre_stock {
   id             Int            @id @default(autoincrement())
   produit_id     Int
   lot_produit_id Int
-  movement_id    Int            @default(0)
+  mouvement_id   Int            @default(0)
   quantite       Int            @default(0)
   created_at     DateTime?      @default(now()) @db.Timestamp(0)
   updated_at     DateTime?      @db.DateTime(0)
   user_id        Int
+  statut         String         @default("0") @db.VarChar(5)
   tb_produit     tb_produit     @relation(fields: [produit_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_tb_autre_stock_tb_produit")
   tb_produit_lot tb_produit_lot @relation(fields: [lot_produit_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_tb_autre_stock_tb_produit_lot")
 
