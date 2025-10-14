@@ -170,51 +170,95 @@ export class TableauBordService {
 
   async getQuantiteRenteeParMois() {
     const result = await this.prisma.$queryRawUnsafe<
-      { mois: number; qte_rentree: number; qte_sortie: number }[]
+      { mois: number; qte_rentree: number; qte_vendu: number, qte_perdu: number, qte_expire: number, qte_detruire: number }[]
     >(`
     SELECT 
-      mois,
-      COALESCE(SUM(qte_rentree), 0) AS qte_rentree,
-      COALESCE(SUM(qte_sortie), 0) AS qte_sortie
-    FROM (
-      -- 🟢 Quantités rentrées (provenant de tb_produit_lot)
-      SELECT 
+    mois,
+    COALESCE(SUM(qte_rentree), 0) AS qte_rentree,
+    COALESCE(SUM(qte_vendu), 0) AS qte_vendu,
+    COALESCE(SUM(qte_perdu), 0) AS qte_perdu,
+    COALESCE(SUM(qte_expire), 0) AS qte_expire,
+    COALESCE(SUM(qte_detruire), 0) AS qte_detruire
+FROM (
+    -- 🟢 Quantités rentrées (tb_produit_lot)
+    SELECT 
         EXTRACT(MONTH FROM pl.created_at) AS mois,
         SUM(pl.quantite) AS qte_rentree,
-        0 AS qte_sortie
-      FROM tb_produit_lot pl
-      GROUP BY EXTRACT(MONTH FROM pl.created_at)
+        0 AS qte_vendu,
+        0 AS qte_perdu,
+        0 AS qte_expire,
+        0 AS qte_detruire
+    FROM tb_produit_lot pl
+    GROUP BY EXTRACT(MONTH FROM pl.created_at)
 
-      UNION ALL
+    UNION ALL
 
-      -- 🔵 Quantités vendues (provenant de vendu_detail)
-      SELECT 
+    -- 🔵 Quantités vendues (tb_vente_detail)
+    SELECT 
         EXTRACT(MONTH FROM v.created_at) AS mois,
         0 AS qte_rentree,
-        SUM(v.quantite) AS qte_sortie
-      FROM tb_vente_detail v
-      GROUP BY EXTRACT(MONTH FROM v.created_at)
+        SUM(v.quantite) AS qte_vendu,
+        0 AS qte_perdu,
+        0 AS qte_expire,
+        0 AS qte_detruire
+    FROM tb_vente_detail v
+    GROUP BY EXTRACT(MONTH FROM v.created_at)
 
-      UNION ALL
+    UNION ALL
 
-      -- 🔴 Quantités expirées (provenant de autre_stock)
-      SELECT 
-        EXTRACT(MONTH FROM a.created_at) AS mois,
+    -- 🔴 Quantités perdues (tb_autre_stock)
+    SELECT 
+        EXTRACT(MONTH FROM p.created_at) AS mois,
         0 AS qte_rentree,
-        SUM(a.quantite) AS qte_sortie
-      FROM tb_autre_stock a
-      -- WHERE a.mouvement_id = 5  -- facultatif : si tu veux seulement les expirations
-      GROUP BY EXTRACT(MONTH FROM a.created_at)
-    ) AS total
-    GROUP BY mois
-    ORDER BY mois ASC;
+        0 AS qte_vendu,
+        SUM(p.quantite) AS qte_perdu,
+        0 AS qte_expire,
+        0 AS qte_detruire
+    FROM tb_autre_stock p
+    WHERE p.mouvement_id = 4
+    GROUP BY EXTRACT(MONTH FROM p.created_at)
+    
+    UNION ALL
+    
+    -- ⚫ Quantités expirées (tb_autre_stock)
+    SELECT 
+        EXTRACT(MONTH FROM e.created_at) AS mois,
+        0 AS qte_rentree,
+        0 AS qte_vendu,
+        0 AS qte_perdu,
+        SUM(e.quantite) AS qte_expire,
+        0 AS qte_detruire
+    FROM tb_autre_stock e
+    WHERE e.mouvement_id = 5
+    GROUP BY EXTRACT(MONTH FROM e.created_at)
+    
+    UNION ALL
+    
+    -- 🟠 Quantités détruites (tb_autre_stock)
+    SELECT 
+        EXTRACT(MONTH FROM d.created_at) AS mois,
+        0 AS qte_rentree,
+        0 AS qte_vendu,
+        0 AS qte_perdu,
+        0 AS qte_expire,
+        SUM(d.quantite) AS qte_detruire
+    FROM tb_autre_stock d
+    WHERE d.mouvement_id = 6
+    GROUP BY EXTRACT(MONTH FROM d.created_at)
+) AS total
+GROUP BY mois
+ORDER BY mois ASC;
+
   `);
 
     // 🧹 Conversion BigInt → Number
     const cleanResult = result.map((r) => ({
       mois: Number(r.mois),
       qte_rentree: Number(r.qte_rentree),
-      qte_sortie: Number(r.qte_sortie),
+      qte_vendu: Number(r.qte_vendu),
+      qte_perdu: Number(r.qte_perdu),
+      qte_expire: Number(r.qte_expire),
+      qte_detruire: Number(r.qte_detruire),
     }));
 
     // 📅 Mois abrégés en français
@@ -230,7 +274,10 @@ export class TableauBordService {
       return {
         mois: label,
         qte_rentree: moisData ? moisData.qte_rentree : 0,
-        qte_sortie: moisData ? moisData.qte_sortie : 0,
+        qte_vendu: moisData ? moisData.qte_vendu : 0,
+        qte_perdu: moisData ? moisData.qte_perdu : 0,
+        qte_expire: moisData ? moisData.qte_expire : 0,
+        qte_detruire: moisData ? moisData.qte_detruire : 0
       };
     });
 
@@ -241,10 +288,10 @@ export class TableauBordService {
 
 
 
-async getPertesEtExpirations() {
-  const result = await this.prisma.$queryRawUnsafe<
-    { libelle: string; qte_pertes: number; qte_expiration: number; qte_initial: number; qte_vendue: number }[]
-  >(`
+  async getPertesEtExpirations() {
+    const result = await this.prisma.$queryRawUnsafe<
+      { libelle: string; qte_pertes: number; qte_expiration: number; qte_initial: number; qte_vendue: number }[]
+    >(`
     SELECT 
       p.libelle,
       COALESCE(pertes.qte_pertes, 0) AS qte_pertes,
@@ -286,17 +333,212 @@ async getPertesEtExpirations() {
     ORDER BY p.libelle ASC;
   `);
 
-  // 🧹 Conversion BigInt → Number
-  const data = result.map((r) => ({
-    produit: r.libelle,
-    qtepertes: Number(r.qte_pertes) || 0,
-    qteInitial: Number(r.qte_initial) || 0,
-    qteexpiration: Number(r.qte_expiration) || 0,
-    qtevendue: Number(r.qte_vendue) || 0,
-    qteDisponible: Number(r.qte_initial) - (Number(r.qte_pertes) + Number(r.qte_expiration)+ Number(r.qte_vendue)),
-  }));
+    // 🧹 Conversion BigInt → Number
+    const data = result.map((r) => ({
+      produit: r.libelle,
+      qtepertes: Number(r.qte_pertes) || 0,
+      qteInitial: Number(r.qte_initial) || 0,
+      qteexpiration: Number(r.qte_expiration) || 0,
+      qtevendue: Number(r.qte_vendue) || 0,
+      qteDisponible: Number(r.qte_initial) - (Number(r.qte_pertes) + Number(r.qte_expiration) + Number(r.qte_vendue)),
+    }));
 
-  return data;
-}
+    return data;
+  }
 
+
+
+
+
+  async getDetailStockDisponible() {
+    const result = await this.prisma.$queryRawUnsafe<
+      { produit: string; quantite_initiale: number; quantite_vendue: number; quantite_expiree: number }[]
+    >(`
+          SELECT 
+        p.libelle AS produit,
+        COALESCE(pl.total_initial, 0) AS quantite_initiale,
+        COALESCE(v.total_vendu, 0) AS quantite_vendue,
+        COALESCE(st.total_expire, 0) AS quantite_expiree
+      FROM tb_produit p
+      LEFT JOIN (
+          SELECT produit_id, SUM(quantite_theorique) AS total_initial
+          FROM tb_produit_lot
+          where statut_inventaire = 1
+          GROUP BY produit_id
+      ) pl ON pl.produit_id = p.id
+      LEFT JOIN (
+          SELECT produit_id, SUM(quantite) AS total_vendu
+          FROM tb_vente_detail
+          GROUP BY produit_id
+      ) v ON v.produit_id = p.id
+      LEFT JOIN (
+          SELECT produit_id, SUM(quantite) AS total_expire
+          FROM tb_autre_stock
+          GROUP BY produit_id
+      ) st ON st.produit_id = p.id
+      ORDER BY p.libelle ASC;
+  `);
+    // if (quantiteDisponibleInitial === 0) {
+    //   return {
+    //     quantiteDisponibleInitial,
+    //     quantiteVendu,
+    //     quantiteAutreStock,
+    //     quantiteDisponibleFinal: 0,
+    //   };
+    // }
+    // 🧹 Conversion BigInt → Number
+
+    const data = result.map((r) => (
+      Number(r.quantite_initiale) === 0
+        ? {
+            produit: r.produit,
+            quantite: 0,
+          }
+        : {
+            produit: r.produit,
+            quantite: Number(r.quantite_initiale) - (Number(r.quantite_expiree) + Number(r.quantite_vendue)),
+          }
+    ));
+
+    return data;
+  }
+
+
+
+
+  async getDetailQuantiteAttente() {
+    const result = await this.prisma.$queryRawUnsafe<
+      { produit: string; quantite_initiale: number }[]
+    >(`
+          SELECT 
+        p.libelle AS produit,
+        COALESCE(pl.total_initial, 0) AS quantite_initiale
+      FROM tb_produit p
+      LEFT JOIN (
+          SELECT produit_id, SUM(quantite) AS total_initial
+          FROM tb_produit_lot
+          where statut_inventaire = 0
+          GROUP BY produit_id
+      ) pl ON pl.produit_id = p.id
+    
+      ORDER BY p.libelle ASC;
+  `);
+    // 🧹 Conversion BigInt → Number
+    const data = result.map((r) => ({
+      produit: r.produit,
+      quantite: Number(r.quantite_initiale),
+    }));
+
+    return data;
+  }
+
+  // afficher les produits qui vont expirer bientot dans 30 jours
+
+  async getDetailQuantiteBientotExpire() {
+    const result = await this.prisma.$queryRawUnsafe<
+      { produit: string; quantite_initiale: number }[]
+    >(
+      `
+    SELECT 
+      p.libelle AS produit,
+      COALESCE(pl.total_initial, 0) AS quantite_initiale
+    FROM tb_produit p
+    LEFT JOIN (
+        SELECT produit_id, SUM(quantite) AS total_initial
+        FROM tb_produit_lot
+        WHERE expiration_date BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 30 DAY)
+        GROUP BY produit_id
+    ) pl ON pl.produit_id = p.id
+    ORDER BY p.libelle ASC;
+  `
+    );
+
+    const data = result.map((r) => ({
+      produit: r.produit,
+      quantite: Number(r.quantite_initiale),
+    }));
+
+    return data;
+  }
+
+  async getDetailQuantiteExpireAujourdHui() {
+    const result = await this.prisma.$queryRawUnsafe<
+      { produit: string; quantite_expiree: number }[]
+    >(
+      `
+    SELECT 
+      p.libelle AS produit,
+      COALESCE(SUM(pl.quantite), 0) AS quantite_expiree
+    FROM tb_produit p
+    LEFT JOIN tb_produit_lot pl
+      ON pl.produit_id = p.id
+      AND DATE(pl.expiration_date) = CURDATE()
+    GROUP BY p.libelle
+    ORDER BY p.libelle ASC;
+  `
+    );
+
+    // Conversion BigInt → Number
+    const data = result.map((r) => ({
+      produit: r.produit,
+      quantite: Number(r.quantite_expiree),
+    }));
+
+    return data;
+  }
+
+
+  async getDetailQuantiteDetruite() {
+    const result = await this.prisma.$queryRawUnsafe<
+      { produit: string; quantite_expiree: number }[]
+    >(
+      `
+    SELECT 
+      p.libelle AS produit,
+      COALESCE(SUM(pl.quantite), 0) AS quantite_expiree
+    FROM tb_produit p
+    LEFT JOIN tb_autre_stock pl
+      ON pl.produit_id = p.id
+      AND pl.statut="1"
+    GROUP BY p.libelle
+    ORDER BY p.libelle ASC
+  `
+    );
+
+    // Conversion BigInt → Number
+    const data = result.map((r) => ({
+      produit: r.produit,
+      quantite: Number(r.quantite_expiree),
+    }));
+
+    return data;
+  }
+
+
+
+  async getDetailQuantiteNonDetruite() {
+    const result = await this.prisma.$queryRawUnsafe<
+      { produit: string; quantite_expiree: number }[]
+    >(
+      `
+    SELECT 
+      p.libelle AS produit,
+      COALESCE(SUM(pl.quantite), 0) AS quantite_expiree
+    FROM tb_produit p
+    LEFT JOIN tb_autre_stock pl
+      ON pl.produit_id = p.id
+      AND pl.statut="0"
+    GROUP BY p.libelle
+    ORDER BY p.libelle ASC
+  `
+    );
+
+    // Conversion BigInt → Number
+    const data = result.map((r) => ({
+      produit: r.produit,
+      quantite: Number(r.quantite_expiree),
+    }));
+
+    return data;
+  }
 }
