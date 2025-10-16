@@ -50,6 +50,7 @@ model tb_fournisseur {
   user_id                  Int?
   type_fournisseur_id      Int?
   tb_categorie_fournisseur tb_categorie_fournisseur? @relation(fields: [type_fournisseur_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_tb_fournisseur_tb_type_fournisseur")
+  tb_produit_lot           tb_produit_lot[]
 
   @@index([type_fournisseur_id], map: "FK_tb_fournisseur_tb_type_fournisseur")
 }
@@ -88,17 +89,19 @@ model tb_produit_lot {
   quantite_theorique Int              @default(0)
   statut_inventaire  Int              @default(0) @db.TinyInt
   user_id            Int              @db.UnsignedInt
-  fournisseur_id     Int              @db.UnsignedInt
+  fournisseur_id     Int
   user_respo_id      Int              @db.UnsignedInt
   created_at         DateTime?        @default(now()) @db.Timestamp(0)
   updated_at         DateTime?        @db.DateTime(0)
   prix_achat         Int?             @default(0)
   tb_autre_stock     tb_autre_stock[]
+  tb_fournisseur     tb_fournisseur   @relation(fields: [fournisseur_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_tb_produit_lot_tb_fournisseur")
   tb_produit         tb_produit       @relation(fields: [produit_id], references: [id], onDelete: Cascade, map: "FK_tb_produit_lot_tb_produit")
   users              users            @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_tb_produit_lot_users")
 
   @@index([produit_id], map: "FK_tb_produit_lot_tb_produit")
   @@index([user_id], map: "FK_tb_produit_lot_users")
+  @@index([fournisseur_id], map: "FK_tb_produit_lot_tb_fournisseur")
 }
 
 model tb_roles {
@@ -150,15 +153,17 @@ model tb_vente_detail {
   prix_unitaire     Decimal            @db.Decimal(15, 2)
   created_at        DateTime           @default(now()) @db.Timestamp(0)
   total             Decimal            @db.Decimal(15, 2)
-  user_id           Int?
+  user_id           Int                @db.UnsignedInt
   stock_temporel_id Int?
   tb_produit        tb_produit         @relation(fields: [produit_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_tb_vente_detail_tb_produit")
   tb_stock_temporel tb_stock_temporel? @relation(fields: [stock_temporel_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_tb_vente_detail_tb_stock_temporel")
+  users             users              @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_tb_vente_detail_users")
   tb_vente          tb_vente           @relation(fields: [vente_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "tb_vente_detail_ibfk_1")
 
   @@index([produit_id], map: "FK_tb_vente_detail_tb_produit")
   @@index([stock_temporel_id], map: "FK_tb_vente_detail_tb_stock_temporel")
   @@index([vente_id], map: "vente_id")
+  @@index([user_id], map: "FK_tb_vente_detail_users")
 }
 
 model user_sessions {
@@ -173,19 +178,20 @@ model user_sessions {
 }
 
 model users {
-  id              Int              @id @default(autoincrement()) @db.UnsignedInt
-  noms_prenoms    String           @db.VarChar(255)
-  nom_utilisateur String           @db.VarChar(50)
-  password        String           @db.VarChar(255)
-  created_at      DateTime?        @default(now()) @db.DateTime(0)
-  updated_at      DateTime?        @db.DateTime(0)
-  matricule       String?          @unique(map: "matricule") @db.VarChar(50)
+  id              Int               @id @default(autoincrement()) @db.UnsignedInt
+  noms_prenoms    String            @db.VarChar(255)
+  nom_utilisateur String            @db.VarChar(50)
+  password        String            @db.VarChar(255)
+  created_at      DateTime?         @default(now()) @db.DateTime(0)
+  updated_at      DateTime?         @db.DateTime(0)
+  matricule       String?           @unique(map: "matricule") @db.VarChar(50)
   role_id         Int?
-  photoUrl        String?          @db.VarChar(255)
-  user_id         Int?             @default(0)
+  photoUrl        String?           @db.VarChar(255)
+  user_id         Int?              @default(0)
   tb_produit_lot  tb_produit_lot[]
+  tb_vente_detail tb_vente_detail[]
   user_sessions   user_sessions[]
-  tb_roles        tb_roles?        @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_users_tb_roles")
+  tb_roles        tb_roles?         @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_users_tb_roles")
 
   @@index([role_id], map: "FK_users_tb_roles")
 }

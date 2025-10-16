@@ -63,4 +63,20 @@ export class TableauBordController {
   async getDetailQuantiteNonDetruite() {
     return this.tableauBordService.getDetailQuantiteNonDetruite();
   }
+
+
+  @Get('evolution-vente-par-jour')
+  async getEvolutionVenteParJour() {
+    return this.tableauBordService.getEvolutionVenteParJour();
+  }
+
+   @Get('evolution-vente-par-mois')
+  async getEvolutionVenteParMois() {
+    return this.tableauBordService.getEvolutionVenteParMois();
+  }
+
+   @Get('evolution-vente-par-annee')
+  async getEvolutionVenteParAnnee() {
+    return this.tableauBordService.getEvolutionVenteParAnnee();
+  }
 }

@@ -134,14 +134,16 @@ export class TableauBordService {
     // 3 produit expirant et detruit 
     const produitDetruit = await this.prisma.tb_autre_stock.aggregate({
       where: {
-        statut: "1",
+        // statut: "1",
+        mouvement_id: 6,
       },
       _sum: { quantite: true },
     });
     // 3 produit expirant et non detruit 
     const produitNonDetruit = await this.prisma.tb_autre_stock.aggregate({
       where: {
-        statut: "0",
+        // statut: "0",
+        mouvement_id: 7,
       },
       _sum: { quantite: true },
     });
@@ -163,9 +165,6 @@ export class TableauBordService {
       quantiteNonDetruit
     };
   }
-
-
-
 
 
   async getQuantiteRenteeParMois() {
@@ -243,7 +242,7 @@ FROM (
         0 AS qte_expire,
         SUM(d.quantite) AS qte_detruire
     FROM tb_autre_stock d
-    WHERE d.mouvement_id = 6
+    WHERE d.mouvement_id = 6 
     GROUP BY EXTRACT(MONTH FROM d.created_at)
 ) AS total
 GROUP BY mois
@@ -391,13 +390,13 @@ ORDER BY mois ASC;
     const data = result.map((r) => (
       Number(r.quantite_initiale) === 0
         ? {
-            produit: r.produit,
-            quantite: 0,
-          }
+          produit: r.produit,
+          quantite: 0,
+        }
         : {
-            produit: r.produit,
-            quantite: Number(r.quantite_initiale) - (Number(r.quantite_expiree) + Number(r.quantite_vendue)),
-          }
+          produit: r.produit,
+          quantite: Number(r.quantite_initiale) - (Number(r.quantite_expiree) + Number(r.quantite_vendue)),
+        }
     ));
 
     return data;
@@ -499,7 +498,7 @@ ORDER BY mois ASC;
     FROM tb_produit p
     LEFT JOIN tb_autre_stock pl
       ON pl.produit_id = p.id
-      AND pl.statut="1"
+      AND  pl.mouvement_id="6"
     GROUP BY p.libelle
     ORDER BY p.libelle ASC
   `
@@ -527,7 +526,7 @@ ORDER BY mois ASC;
     FROM tb_produit p
     LEFT JOIN tb_autre_stock pl
       ON pl.produit_id = p.id
-      AND pl.statut="0"
+      AND pl.mouvement_id="7"
     GROUP BY p.libelle
     ORDER BY p.libelle ASC
   `
@@ -541,4 +540,191 @@ ORDER BY mois ASC;
 
     return data;
   }
+
+
+
+
+
+  async getEvolutionVenteParJour() {
+  const result = await this.prisma.$queryRawUnsafe<
+    { jours: number; total_vendu: number; qte_vendu: number }[]
+  >(`
+    SELECT 
+        -- 🔁 Transformer le jour pour que Lundi = 1, Dimanche = 7
+        (CASE WHEN DAYOFWEEK(v.created_at) = 1 THEN 7 ELSE DAYOFWEEK(v.created_at) - 1 END) AS jours,
+        COALESCE(SUM(v.quantite), 0) AS qte_vendu,
+        COALESCE(SUM(v.total), 0) AS total_vendu
+    FROM tb_vente_detail v
+    WHERE YEARWEEK(v.created_at, 1) = YEARWEEK(CURDATE(), 1)
+    GROUP BY (CASE WHEN DAYOFWEEK(v.created_at) = 1 THEN 7 ELSE DAYOFWEEK(v.created_at) - 1 END)
+    ORDER BY jours ASC;
+  `);
+
+  // 🧹 Conversion BigInt → Number
+  const cleanResult = result.map((r) => ({
+    jours: Number(r.jours),
+    qte_vendu: Number(r.qte_vendu),
+    total_vendu: Number(r.total_vendu),
+  }));
+
+  // 🗓️ Jours de la semaine (en commençant par Lundi)
+  const joursLabels = [
+    "Lundi",
+    "Mardi",
+    "Mercredi",
+    "Jeudi",
+    "Vendredi",
+    "Samedi",
+    "Dim",
+  ];
+
+  // 🧩 Reformater pour le frontend
+  const data = joursLabels.map((label, index) => {
+    const joursData = cleanResult.find((r) => r.jours === index + 1);
+
+    return {
+      jours: label,
+      total_vendu: joursData ? joursData.total_vendu : 0,
+      qte_vendu: joursData ? joursData.qte_vendu : 0,
+    };
+  });
+
+  return data;
 }
+
+
+
+
+
+
+  async getEvolutionVenteParMois() {
+    const result = await this.prisma.$queryRawUnsafe<
+      { mois: number; total_vendu: number; qte_vendu: number }[]
+    >(`
+    SELECT 
+          mois,
+          COALESCE(SUM(qte_vendu), 0) AS qte_vendu,
+          COALESCE(SUM(total_vendu), 0) AS total_vendu
+      FROM (
+          SELECT 
+              MONTH(v.created_at) AS mois,
+              0 AS qte_vendu,
+              SUM(v.total) AS total_vendu
+          FROM tb_vente_detail v
+          WHERE YEAR(v.created_at) = YEAR(CURDATE())
+          GROUP BY MONTH(v.created_at)
+
+          UNION ALL
+
+          SELECT 
+              MONTH(v.created_at) AS mois,
+              SUM(v.quantite) AS qte_vendu,
+              0 AS total_vendu
+          FROM tb_vente_detail v
+          WHERE YEAR(v.created_at) = YEAR(CURDATE())
+          GROUP BY MONTH(v.created_at)
+      ) AS total
+      GROUP BY mois
+      ORDER BY mois ASC;
+  `);
+
+    // 🧹 Conversion BigInt → Number
+    const cleanResult = result.map((r) => ({
+      mois: Number(r.mois),
+      qte_vendu: Number(r.qte_vendu),
+      total_vendu: Number(r.total_vendu),
+    }));
+
+    // 🗓️ Jours de la semaine (MySQL: 1=Dimanche, 7=Samedi)
+    const moisLabels = [
+      "Jan", "Fév", "Mar", "Avr", "Mai", "Juin",
+      "Juil", "Août", "Sep", "Oct", "Nov", "Déc"
+    ];
+
+    // 🧩 Reformater pour le frontend
+    const data = moisLabels.map((label, index) => {
+      const moisData = cleanResult.find((r) => r.mois === index + 1);
+
+      return {
+        mois: label,
+        total_vendu: moisData ? moisData.total_vendu : 0,
+        qte_vendu: moisData ? moisData.qte_vendu : 0,
+      };
+    });
+
+    return data;
+  }
+
+
+
+  async getEvolutionVenteParAnnee() {
+    const result = await this.prisma.$queryRawUnsafe<
+      { annee: number; total_vendu: number; qte_vendu: number }[]
+    >(`
+    SELECT 
+          annee,
+          COALESCE(SUM(qte_vendu), 0) AS qte_vendu,
+          COALESCE(SUM(total_vendu), 0) AS total_vendu
+      FROM (
+          SELECT 
+              YEAR(v.created_at) AS annee,
+              0 AS qte_vendu,
+              SUM(v.total) AS total_vendu
+          FROM tb_vente_detail v
+          GROUP BY YEAR(v.created_at)
+
+          UNION ALL
+
+          SELECT 
+              YEAR(v.created_at) AS annee,
+              SUM(v.quantite) AS qte_vendu,
+              0 AS total_vendu
+          FROM tb_vente_detail v
+          GROUP BY YEAR(v.created_at)
+      ) AS total
+      GROUP BY annee
+      ORDER BY annee ASC;
+  `);
+
+    // 🧹 Conversion BigInt → Number
+    const data = result.map((r) => ({
+      annee: Number(r.annee),
+      qte_vendu: Number(r.qte_vendu),
+      total_vendu: Number(r.total_vendu),
+    }));
+
+    // 🗓️ Jours de la semaine (MySQL: 1=Dimanche, 7=Samedi)
+    // const anneeLabels = [
+    //   "Jan", "Fév", "Mar", "Avr", "Mai", "Juin",
+    //   "Juil", "Août", "Sep", "Oct", "Nov", "Déc"
+    // ];
+
+    // 🧩 Reformater pour le frontend
+    // const data = anneeLabels.map((label, index) => {
+    //   const anneeData = cleanResult.find((r) => r.annee === index + 1);
+
+    //   return {
+    //     annee: label,
+    //     total_vendu: anneeData ? anneeData.total_vendu : 0,
+    //     qte_vendu: anneeData ? anneeData.qte_vendu : 0,
+    //   };
+    // });
+
+    return data;
+  }
+
+
+  // Produits les plus vendus
+  async getProduitsLesPlusVendus() {
+    return this.prisma.produit.findMany({
+      orderBy: {
+        qte_vendu: 'desc'
+      },
+      take: 5
+    });
+  }
+  
+}
+
+
+
