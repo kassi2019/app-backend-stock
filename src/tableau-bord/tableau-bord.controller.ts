@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
 import { TableauBordService } from './tableau-bord.service';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
 
@@ -70,13 +70,29 @@ export class TableauBordController {
     return this.tableauBordService.getEvolutionVenteParJour();
   }
 
-   @Get('evolution-vente-par-mois')
+  @Get('evolution-vente-par-mois')
   async getEvolutionVenteParMois() {
     return this.tableauBordService.getEvolutionVenteParMois();
   }
 
-   @Get('evolution-vente-par-annee')
+  @Get('evolution-vente-par-annee')
   async getEvolutionVenteParAnnee() {
     return this.tableauBordService.getEvolutionVenteParAnnee();
   }
+
+
+
+  @Get('pan-caissier')
+  async getfonctionDuPanTableauBordCaissier(@Req() req: any) {
+    const userId = req.user.sub;
+    return this.tableauBordService.FonctionDuPanTableauBordCaissier(userId);
+  }
+
+  @Get('evolution-par-jour-par-caissier')
+  getEvolutionVenteParJourParCaissier(@Req() req: any) {
+    const userId = req.user.sub;
+    return this.tableauBordService.EvolutionVenteParJourParCaissier(userId);
+  }
+
+
 }

@@ -9,6 +9,9 @@ export class TableauBordService {
   constructor(private readonly prisma: PrismaService,
     private readonly produitGateway: ProduitGateway,
   ) { }
+
+
+  // ******************************* DEBUT DES FONCTIONS DU TABLEAU DE BORD COTE RESPONSABLE DE STOCK*******************************
   // affichier la quantite disponible dans notre stock
 
   async AfficherQuantiteDisponible() {
@@ -546,9 +549,9 @@ ORDER BY mois ASC;
 
 
   async getEvolutionVenteParJour() {
-  const result = await this.prisma.$queryRawUnsafe<
-    { jours: number; total_vendu: number; qte_vendu: number }[]
-  >(`
+    const result = await this.prisma.$queryRawUnsafe<
+      { jours: number; total_vendu: number; qte_vendu: number }[]
+    >(`
     SELECT 
         -- 🔁 Transformer le jour pour que Lundi = 1, Dimanche = 7
         (CASE WHEN DAYOFWEEK(v.created_at) = 1 THEN 7 ELSE DAYOFWEEK(v.created_at) - 1 END) AS jours,
@@ -560,42 +563,37 @@ ORDER BY mois ASC;
     ORDER BY jours ASC;
   `);
 
-  // 🧹 Conversion BigInt → Number
-  const cleanResult = result.map((r) => ({
-    jours: Number(r.jours),
-    qte_vendu: Number(r.qte_vendu),
-    total_vendu: Number(r.total_vendu),
-  }));
+    // 🧹 Conversion BigInt → Number
+    const cleanResult = result.map((r) => ({
+      jours: Number(r.jours),
+      qte_vendu: Number(r.qte_vendu),
+      total_vendu: Number(r.total_vendu),
+    }));
 
-  // 🗓️ Jours de la semaine (en commençant par Lundi)
-  const joursLabels = [
-    "Lundi",
-    "Mardi",
-    "Mercredi",
-    "Jeudi",
-    "Vendredi",
-    "Samedi",
-    "Dim",
-  ];
+    // 🗓️ Jours de la semaine (en commençant par Lundi)
+    const joursLabels = [
+      "Lundi",
+      "Mardi",
+      "Mercredi",
+      "Jeudi",
+      "Vendredi",
+      "Samedi",
+      "Dim",
+    ];
 
-  // 🧩 Reformater pour le frontend
-  const data = joursLabels.map((label, index) => {
-    const joursData = cleanResult.find((r) => r.jours === index + 1);
+    // 🧩 Reformater pour le frontend
+    const data = joursLabels.map((label, index) => {
+      const joursData = cleanResult.find((r) => r.jours === index + 1);
 
-    return {
-      jours: label,
-      total_vendu: joursData ? joursData.total_vendu : 0,
-      qte_vendu: joursData ? joursData.qte_vendu : 0,
-    };
-  });
+      return {
+        jours: label,
+        total_vendu: joursData ? joursData.total_vendu : 0,
+        qte_vendu: joursData ? joursData.qte_vendu : 0,
+      };
+    });
 
-  return data;
-}
-
-
-
-
-
+    return data;
+  }
 
   async getEvolutionVenteParMois() {
     const result = await this.prisma.$queryRawUnsafe<
@@ -713,17 +711,124 @@ ORDER BY mois ASC;
     return data;
   }
 
+  // ******************************* FIN DES FONCTIONS DU TABLEAU DE BORD COTE RESPONSABLE DE STOCK*******************************
 
-  // Produits les plus vendus
-  async getProduitsLesPlusVendus() {
-    return this.prisma.produit.findMany({
-      orderBy: {
-        qte_vendu: 'desc'
+
+
+  // ******************************* DEBUT DES FONCTIONS DU TABLEAU DE BORD COTE CAISSIER*******************************
+
+  async FonctionDuPanTableauBordCaissier(userId: number) {
+    // Début et fin de la journée (sans écraser today)
+    const today = new Date();
+    const startOfDay = new Date(today);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(today);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    // 🔹 1. Montant total vendu du jour
+    const venteJour = await this.prisma.tb_vente_detail.aggregate({
+      where: {
+        user_id: userId ?? 0,
+        created_at: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
       },
-      take: 5
+      _sum: { total: true },
     });
+
+    // 🔹 2. Nombre de ventes (tickets du jour)
+    const totalVentes = await this.prisma.tb_vente.count({
+      where: {
+        user_id: userId ?? 0,
+        created_at: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+      },
+    });
+
+    // 🔹 3. Nombre total d’articles vendus du jour
+    const articlesVenduesJour = await this.prisma.tb_vente_detail.aggregate({
+      where: {
+        user_id: userId ?? 0,
+        created_at: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+      },
+      _sum: { quantite: true },
+    });
+
+    // 🔹 4. Sécuriser les valeurs
+    const montantVendu = venteJour._sum.total ?? 0;
+    const totalTickets = totalVentes ?? 0;
+    const totalArticles = articlesVenduesJour._sum.quantite ?? 0;
+
+    // 🔹 5. Regrouper les résultats
+    const result = {
+      montantVendu,
+      totalTickets,
+      totalArticles,
+    };
+
+    // 🔹 6. Émettre la mise à jour via WebSocket (si nécessaire)
+    this.produitGateway.envoyerMaj(result);
+
+    return result;
   }
-  
+
+
+
+
+  async EvolutionVenteParJourParCaissier(userId: number) {
+    const result = await this.prisma.$queryRawUnsafe<
+      { jours: number; total_vendu: number; qte_vendu: number }[]
+    >(`
+    SELECT 
+        -- 🔁 Transformer le jour pour que Lundi = 1, Dimanche = 7
+        (CASE WHEN DAYOFWEEK(v.created_at) = 1 THEN 7 ELSE DAYOFWEEK(v.created_at) - 1 END) AS jours,
+        COALESCE(SUM(v.quantite), 0) AS qte_vendu,
+        COALESCE(SUM(v.total), 0) AS total_vendu
+    FROM tb_vente_detail v
+    WHERE YEARWEEK(v.created_at, 1) = YEARWEEK(CURDATE(), 1) and v.user_id = ${userId}
+    GROUP BY (CASE WHEN DAYOFWEEK(v.created_at) = 1 THEN 7 ELSE DAYOFWEEK(v.created_at) - 1 END)
+    ORDER BY jours ASC;
+  `);
+
+    // 🧹 Conversion BigInt → Number
+    const cleanResult = result.map((r) => ({
+      jours: Number(r.jours),
+      qte_vendu: Number(r.qte_vendu),
+      total_vendu: Number(r.total_vendu),
+    }));
+
+    // 🗓️ Jours de la semaine (en commençant par Lundi)
+    const joursLabels = [
+      "Lundi",
+      "Mardi",
+      "Mercredi",
+      "Jeudi",
+      "Vendredi",
+      "Samedi",
+      "Dim",
+    ];
+
+    // 🧩 Reformater pour le frontend
+    const data = joursLabels.map((label, index) => {
+      const joursData = cleanResult.find((r) => r.jours === index + 1);
+
+      return {
+        jours: label,
+        total_vendu: joursData ? joursData.total_vendu : 0,
+        qte_vendu: joursData ? joursData.qte_vendu : 0,
+      };
+    });
+
+    return data;
+  }
+
+  // ******************************* FIN DES FONCTIONS DU TABLEAU DE BORD COTE CAISSIER*******************************
 }
 
 

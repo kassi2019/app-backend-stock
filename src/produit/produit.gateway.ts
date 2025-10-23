@@ -28,12 +28,20 @@ export class ProduitGateway {
     notifyProduitUpdated(produit: any) {
         this.server.emit('produitUpdated', produit);
     }
-
-     notifyProduitStockTemporelUpdated(produitstock: any) {
+    notifyProduitStockTemporelUpdated(produitstock: any) {
         this.server.emit('produitstockUpdated', produitstock);
     }
+    notificationAutreStock(autreStock: any) {
+        this.server.emit('produitstockUpdated', autreStock);
+    }
 
-     envoyerMaj(data: any) {
-    this.server.emit('majTableauBord', data);
-  }
+    envoyerMaj(data: any) {
+        this.server.emit('majTableauBord', data);
+    }
+
+
+
+    notificationTableAutreStock(vente: any, produitlot: any) {
+        this.server.emit('produitstockUpdated', vente, produitlot);
+    }
 }

@@ -410,6 +410,8 @@ export class ProduitService {
         });
 
         this.produitGateway.notifyProduitStockTemporelUpdated(produitlot);
+        this.produitGateway.notificationAutreStock(this.prisma.tb_autre_stock);
+         this.produitGateway.notificationTableAutreStock(this.prisma.tb_produit_lot, this.prisma.tb_vente_detail);
         return produitlot;
     }
 
