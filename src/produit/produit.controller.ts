@@ -70,8 +70,17 @@ export class ProduitController {
         return this.produitService.AfficherNombreDeLotParProduit(code_barre);
     }
 
+    @Get('nombreLotProduitid/:idprod')
+    AfficherNombreDeLotParProduitid(@Param('idprod') idprod: number) {
+        return this.produitService.AfficherNombreDeLotParProduitId(idprod);
+    }
 
 
+
+    @Get('quantiteProduitid/:idprod')
+    AfficherQuantiteParProduitid(@Param('idprod') idprod: number) {
+        return this.produitService.AfficherQuantiteParProduitid(idprod);
+    }
     @Get('quantiteProduit/:code_barre')
     AfficherQuantiteParProduit(@Param('code_barre') code_barre: string) {
         return this.produitService.AfficherQuantiteParProduit(code_barre);
@@ -216,6 +225,22 @@ export class ProduitController {
         return {
             statusCode: HttpStatus.OK,
             message: 'Modification réussie',
+            data: result,
+        };
+    }
+
+
+
+    @Post('creerLotProduit')
+    async createLotProduit(
+        @Body() dto: ProduitLotDtoCreate,
+        @Req() req: any) {
+
+        const userId = req.user.sub;
+        const result = await this.produitService.enregistrerProduitStockSansCodeBarre(dto, userId);
+        return {
+            statusCode: HttpStatus.CREATED,
+            message: 'Création réussie',
             data: result,
         };
     }

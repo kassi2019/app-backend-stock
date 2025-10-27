@@ -114,7 +114,49 @@ export class ProduitService {
         return lot.length
     }
 
+    async AfficherNombreDeLotParProduitId(id_prod: number) {
 
+        const idProduit = await this.prisma.tb_produit.findFirst({
+            where: { id: Number(id_prod) },
+        });
+
+        if (!idProduit) {
+            return 0;
+        }
+        const lot = await this.prisma.tb_produit_lot.findMany({
+            where: { produit_id: Number(idProduit?.id) },
+        });
+        return lot.length
+    }
+
+
+    async AfficherQuantiteParProduitid(id_prod: number) {
+        const produit = await this.prisma.tb_produit.findFirst({
+            where: { id: Number(id_prod) },
+            include: {
+                tb_produit_lot: {
+                    select: { quantite: true },
+                },
+                tb_vente_detail: {
+                    select: { quantite: true },
+                },
+            },
+        });
+
+        if (!produit) return 0;
+
+        const sommeLots = produit.tb_produit_lot.reduce(
+            (acc, lot) => acc + Number(lot.quantite || 0),
+            0,
+        );
+
+        const sommeMouvements = produit.tb_vente_detail.reduce(
+            (acc, mvt) => acc + Number(mvt.quantite || 0),
+            0,
+        );
+
+        return sommeLots - sommeMouvements;
+    }
     // afficher quantite initial et actual par produit
     async AfficherQuantiteParProduit(code_barre: string) {
         const produit = await this.prisma.tb_produit.findFirst({
@@ -411,7 +453,7 @@ export class ProduitService {
 
         this.produitGateway.notifyProduitStockTemporelUpdated(produitlot);
         this.produitGateway.notificationAutreStock(this.prisma.tb_autre_stock);
-         this.produitGateway.notificationTableAutreStock(this.prisma.tb_produit_lot, this.prisma.tb_vente_detail);
+        this.produitGateway.notificationTableAutreStock(this.prisma.tb_produit_lot, this.prisma.tb_vente_detail);
         return produitlot;
     }
 
@@ -486,8 +528,24 @@ export class ProduitService {
     }
 
 
-
-
+    async enregistrerProduitStockSansCodeBarre(data: ProduitLotDtoCreate, userId?: number) {
+        const expirationDateStr = data.expiration_date; // exemple depuis le frontend
+        const expirationDate = expirationDateStr
+            ? new Date(`${expirationDateStr}T00:00:00.000Z`)
+            : null;
+        return this.prisma.tb_produit_lot.create({
+            data: {
+                produit_id: Number(data.produit_id),
+                code_lot: data.code_lot,
+                expiration_date: expirationDate,
+                quantite: Number(data.quantite),
+                prix_achat: Number(data.prix_achat),
+                user_id: userId ?? 0,
+                user_respo_id: userId ?? 0, // Ajout de la propriété obligatoire
+                fournisseur_id: Number(data.fournisseur_id),
+            },
+        })
+    }
 }
 
 
