@@ -244,6 +244,54 @@ export class ProduitController {
             data: result,
         };
     }
+
+
+
+
+
+    @Delete('supprimerLotProduit/:id')
+    async LotProduit(@Param('id') id: number) {
+        const result = await this.produitService.deleteLotProduit(id);
+        return {
+            statusCode: HttpStatus.OK,
+            message: 'Suppression réussie',
+            data: result,
+        };
+    }
+
+
+
+    @Post('ajouterProduitTemporelParCode/:codeProduit')
+    async ajouterProduitTemporelParCodeProduit(
+        @Param('codeProduit') codeProduit: string,
+        @Req() req: any
+    ) {
+        const userId = req.user.sub;
+        const result = await this.produitService.enregistrerProduitSortantProvisoireParCodeProduit(codeProduit, userId);
+        return {
+            statusCode: HttpStatus.OK,
+            message: 'Produit mise à jour avec succes',
+            data: result,
+        };
+    }
+
+
+    @Get('detailProduitParCode/:code')
+    findByCode(@Param('code') code: string) {
+        return this.produitService.findByProduitParCode(code);
+    }
+
+
+
+       @Delete('supprimerProduitTemporel/:id')
+    async ProduitTemporel(@Param('id') id: number) {
+        const result = await this.produitService.deleteProduitTemporel(id);
+        return {
+            statusCode: HttpStatus.OK,
+            message: 'Suppression réussie',
+            data: result,
+        };
+    }
 }
 
 

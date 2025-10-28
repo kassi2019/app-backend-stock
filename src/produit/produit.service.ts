@@ -546,6 +546,62 @@ export class ProduitService {
             },
         })
     }
+
+
+
+    async deleteLotProduit(id: number) {
+        return this.prisma.tb_produit_lot.delete({
+            where: { id: Number(id) },
+        })
+    }
+
+
+
+
+    async enregistrerProduitSortantProvisoireParCodeProduit(
+        codeProduit: string,
+        userId: number
+    ) {
+        const produit = await this.prisma.tb_produit.findFirst({
+            where: { code: String(codeProduit) },
+        });
+
+        if (!produit) {
+            throw new Error(`Produit avec code ${codeProduit} introuvable`);
+        }
+
+
+        // Dans tous les cas, on ajoute un lot
+        const lot = await this.prisma.tb_stock_temporel.create({
+            data: {
+                produit_id: produit.id,
+                statut: 0,
+                user_id: userId ?? 0,
+            },
+        });
+        this.produitGateway.notifyProduitStockTemporelUpdated(lot);
+        return lot;
+    }
+
+
+
+    async findByProduitParCode(code: string) {
+        const product = await this.prisma.tb_produit.findFirst({
+            where: { code: String(code) },
+        });
+        if (!product) {
+            return "";
+        }
+        return product;
+    }
+
+
+
+    async deleteProduitTemporel(id: number) {
+        return this.prisma.tb_stock_temporel.delete({
+            where: { id: Number(id) },
+        })
+    }
 }
 
 
