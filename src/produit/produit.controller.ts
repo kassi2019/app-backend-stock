@@ -283,7 +283,7 @@ export class ProduitController {
 
 
 
-       @Delete('supprimerProduitTemporel/:id')
+    @Delete('supprimerProduitTemporel/:id')
     async ProduitTemporel(@Param('id') id: number) {
         const result = await this.produitService.deleteProduitTemporel(id);
         return {
@@ -291,6 +291,12 @@ export class ProduitController {
             message: 'Suppression réussie',
             data: result,
         };
+    }
+
+
+    @Delete('multiple')
+    async deleteMultiple(@Body() body: { ids: number[] }) {
+        return this.produitService.deleteProduitsCochetTemporels(body.ids);
     }
 }
 

@@ -1,21 +1,20 @@
-import { Controller, Get, Post, Body, Param, Delete, HttpStatus, Req, Put, UseGuards } from '@nestjs/common';
-import { CategoriefournisseurService } from './categoriefournisseur.service';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpStatus, Req, Put, UseGuards } from '@nestjs/common';
+import { CategoriefournisseurService } from './categoriefournisseur.service1';
 import { CreateCategoriefournisseurDto } from './dto/create-categoriefournisseur.dto';
 import { UpdateCategoriefournisseurDto } from './dto/update-categoriefournisseur.dto';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
-import { LoggerService } from 'src/common/logger/logger.service';
 
 @Controller('categoriefournisseur')
 @UseGuards(JwtAuthGuard)
 export class CategoriefournisseurController {
-  constructor(
-    private categoriefournisseurService: CategoriefournisseurService,
-    private logger: LoggerService, // ✅ Injection du logger
-  ) {}
+  constructor(private categoriefournisseurService: CategoriefournisseurService) { }
 
   @Post('creer')
-  async create(@Body() dto: CreateCategoriefournisseurDto, @Req() req: any) {
-    this.logger.log(`Appel création catégorie fournisseur par user ${req.user.sub}`, 'CategoriefournisseurController');
+
+  async create(
+    @Body() dto: CreateCategoriefournisseurDto,
+    @Req() req: any) {
+
     const userId = req.user.sub;
     const result = await this.categoriefournisseurService.create(dto, userId);
     return {
@@ -25,9 +24,9 @@ export class CategoriefournisseurController {
     };
   }
 
+
   @Get('liste')
   async findAll() {
-    this.logger.log('Appel liste catégories fournisseurs', 'CategoriefournisseurController');
     const result = await this.categoriefournisseurService.findAll();
     return {
       statusCode: HttpStatus.OK,
@@ -37,8 +36,8 @@ export class CategoriefournisseurController {
   }
 
   @Put('modifier/:id')
-  async update(@Param('id') id: number, @Body() dto: UpdateCategoriefournisseurDto) {
-    this.logger.log(`Appel modification catégorie fournisseur ID ${id}`, 'CategoriefournisseurController');
+  async update(@Param('id') id: number,
+    @Body() dto: UpdateCategoriefournisseurDto) {
     const result = await this.categoriefournisseurService.update(id, dto);
     return {
       statusCode: HttpStatus.OK,
@@ -47,9 +46,9 @@ export class CategoriefournisseurController {
     };
   }
 
+
   @Delete('supprimer/:id')
   async delete(@Param('id') id: number) {
-    this.logger.log(`Appel suppression catégorie fournisseur ID ${id}`, 'CategoriefournisseurController');
     const result = await this.categoriefournisseurService.delete(id);
     return {
       statusCode: HttpStatus.OK,

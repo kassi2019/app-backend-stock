@@ -25,10 +25,10 @@ import { TableauBordModule } from './tableau-bord/tableau-bord.module';
 import { AutreStockModule } from './autre-stock/autre-stock.module';
 import { RapportModule } from './rapport/rapport.module';
 
-
+import { LoggerModule } from './common/logger/logger.module';
 
 @Module({
-  imports: [AuthModule, UserModule, PrismaModule, TypeEquipementModule, RolesModule, TypeMouvementModule, MouvementModule, ProduitModule, ProduitLotModule, CategorieProduitModule, VenteModule, EntrepriseModule, CategoriefournisseurModule, TableauBordModule, AutreStockModule, RapportModule],
+  imports: [AuthModule, UserModule, PrismaModule, TypeEquipementModule, RolesModule, TypeMouvementModule, MouvementModule, ProduitModule, ProduitLotModule, CategorieProduitModule, VenteModule, EntrepriseModule, CategoriefournisseurModule, TableauBordModule, AutreStockModule, RapportModule, LoggerModule],
   controllers: [AppController, ProduitController, CategorieProduitController],
   providers: [AppService, ProduitService, ProduitLotService, CategorieProduitService],
 })

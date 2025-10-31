@@ -602,6 +602,17 @@ export class ProduitService {
             where: { id: Number(id) },
         })
     }
+
+    async deleteProduitsCochetTemporels(ids: number[]) {
+        if (!ids || ids.length === 0) {
+            throw new Error('Aucun élément sélectionné à supprimer.');
+        }
+        return this.prisma.tb_stock_temporel.deleteMany({
+            where: {
+                id: { in: ids },
+            },
+        });
+    }
 }
 
 
