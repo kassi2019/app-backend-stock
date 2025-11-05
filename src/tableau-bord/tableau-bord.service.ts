@@ -847,7 +847,6 @@ ORDER BY mois ASC;
     GROUP BY jour, m.id, m.libelle
     ORDER BY jour ASC;
   `);
-
     // 🔹 Liste des jours
     const joursLabels = [
       "Lundi",
@@ -858,32 +857,19 @@ ORDER BY mois ASC;
       "Samedi",
       "Dimanche",
     ];
-
     // 🔹 Extraire tous les modes de paiement trouvés
     const modes = [...new Set(result.map((r) => r.mode_libelle))];
-
-
-    // 🔹 Construire les données pour chaque jour
     const data = joursLabels.map((label, index) => {
       const jourNum = index + 1;
-      console.log(`Traitement pour le jour7:`, result);
-      console.log(`Traitement pour le jour8:`, jourNum);
-      const jourData = result.filter((r) => r.jour === jourNum);
+      const jourData = result.filter((r) => Number(r.jour) === jourNum);
       const obj: any = { jour: label };
-
       modes.forEach((mode) => {
-        console.log(`Traitement pour le jour:`, mode);
-        console.log(`Traitement pour le jour2:`, jourData);
-        // On met aussi le même traitement ici pour cohérence
         const record = jourData.find((r) => r.mode_libelle === mode);
-        console.log(`Jour: ${label}, Mode: ${mode}, Record trouvé:`, record);
         obj[mode] = record ? Number(record.total) : 0;
       });
 
       return obj;
     });
-
-    console.log("Résultat final:", data);
     return data;
   }
 
