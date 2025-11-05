@@ -26,9 +26,10 @@ import { AutreStockModule } from './autre-stock/autre-stock.module';
 import { RapportModule } from './rapport/rapport.module';
 
 import { LoggerModule } from './common/logger/logger.module';
+import { ModePaiementModule } from './mode-paiement/mode-paiement.module';
 
 @Module({
-  imports: [AuthModule, UserModule, PrismaModule, TypeEquipementModule, RolesModule, TypeMouvementModule, MouvementModule, ProduitModule, ProduitLotModule, CategorieProduitModule, VenteModule, EntrepriseModule, CategoriefournisseurModule, TableauBordModule, AutreStockModule, RapportModule, LoggerModule],
+  imports: [AuthModule, UserModule, PrismaModule, TypeEquipementModule, RolesModule, TypeMouvementModule, MouvementModule, ProduitModule, ProduitLotModule, CategorieProduitModule, VenteModule, EntrepriseModule, CategoriefournisseurModule, TableauBordModule, AutreStockModule, RapportModule, LoggerModule, ModePaiementModule],
   controllers: [AppController, ProduitController, CategorieProduitController],
   providers: [AppService, ProduitService, ProduitLotService, CategorieProduitService],
 })

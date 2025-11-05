@@ -94,6 +94,7 @@ model tb_produit_lot {
   created_at         DateTime?        @default(now()) @db.Timestamp(0)
   updated_at         DateTime?        @db.DateTime(0)
   prix_achat         Int?             @default(0)
+  active             Int?
   tb_autre_stock     tb_autre_stock[]
   tb_fournisseur     tb_fournisseur   @relation(fields: [fournisseur_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_tb_produit_lot_tb_fournisseur")
   tb_produit         tb_produit       @relation(fields: [produit_id], references: [id], onDelete: Cascade, map: "FK_tb_produit_lot_tb_produit")
@@ -136,13 +137,14 @@ model tb_type_mouvement {
 }
 
 model tb_vente {
-  id              Int               @id @default(autoincrement())
-  montant_recu    Decimal           @db.Decimal(15, 2)
-  montant_a_payer Decimal           @db.Decimal(15, 2)
-  monnaie_rendu   Decimal           @db.Decimal(15, 2)
-  created_at      DateTime?         @default(now()) @db.Timestamp(0)
-  user_id         Int?
-  tb_vente_detail tb_vente_detail[]
+  id               Int               @id @default(autoincrement())
+  montant_recu     Decimal           @db.Decimal(15, 2)
+  montant_a_payer  Decimal           @db.Decimal(15, 2)
+  monnaie_rendu    Decimal           @db.Decimal(15, 2)
+  created_at       DateTime?         @default(now()) @db.Timestamp(0)
+  user_id          Int?
+  mode_paiement_id Int?
+  tb_vente_detail  tb_vente_detail[]
 }
 
 model tb_vente_detail {
@@ -194,4 +196,12 @@ model users {
   tb_roles        tb_roles?         @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_users_tb_roles")
 
   @@index([role_id], map: "FK_users_tb_roles")
+}
+
+model tb_mode_paiement {
+  id         Int       @id @default(autoincrement())
+  libelle    String?   @db.VarChar(50)
+  created_at DateTime? @default(now()) @db.DateTime(0)
+  updated_at DateTime? @db.DateTime(0)
+  user_id    Int?
 }

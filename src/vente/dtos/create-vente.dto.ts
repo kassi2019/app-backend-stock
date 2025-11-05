@@ -23,6 +23,11 @@ class VenteDetailDto {
 }
 
 export class CreateVenteDto {
+
+    @IsNumber()
+    @Type(() => Number)
+    mode_paiement_id?: number
+
     @IsNumber()
     @Type(() => Number)
     montant_recu?: number | undefined;

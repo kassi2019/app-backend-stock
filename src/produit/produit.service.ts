@@ -325,7 +325,7 @@ export class ProduitService {
             throw new Error(`Produit avec code ${codeBarre} introuvable`);
         }
 
-
+        console.log(codeBarre)
         // Dans tous les cas, on ajoute un lot
         const lot = await this.prisma.tb_stock_temporel.create({
             data: {

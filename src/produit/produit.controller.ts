@@ -146,6 +146,7 @@ export class ProduitController {
         @Param('codeBarre') codeBarre: string,
         @Req() req: any
     ) {
+        console.log({codeBarre})
         const userId = req.user.sub;
         const result = await this.produitService.enregistrerProduitSortantProvisoire(codeBarre, userId);
         return {

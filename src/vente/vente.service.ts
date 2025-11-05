@@ -48,7 +48,7 @@ export class VenteService {
 
 
     async create(createVenteDto: CreateVenteDto, userId: number) {
-        const { montant_recu, montant_a_payer, monnaie_rendu, tb_vente_detail } = createVenteDto;
+        const { montant_recu, montant_a_payer, monnaie_rendu, tb_vente_detail, mode_paiement_id } = createVenteDto;
 
         // Optionnel : simple validation côté service
         if (montant_recu === undefined) {
@@ -66,6 +66,7 @@ export class VenteService {
                 montant_recu,
                 montant_a_payer,
                 monnaie_rendu: monnaie_rendu ?? 0,
+                mode_paiement_id: mode_paiement_id ?? null,
                 user_id: userId ?? 0,
                 tb_vente_detail: {
                     create: tb_vente_detail.map((d) => ({

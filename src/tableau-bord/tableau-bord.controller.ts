@@ -95,4 +95,12 @@ export class TableauBordController {
   }
 
 
+
+
+  
+  @Get('evolution-par-jour-par-mode-paiement')
+  getEvolutionVenteParModePaiement(@Req() req: any) {
+    const userId = req.user.sub;
+    return this.tableauBordService.EvolutionVenteParModePaiement(userId);
+  }
 }
