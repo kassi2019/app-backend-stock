@@ -2,7 +2,7 @@ import { Injectable, ConflictException, NotFoundException } from '@nestjs/common
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ProduitDtoCreate, ProduitDtoUpdate, ProduitLotDtoCreate } from './dtos/produitDto';
 import { ProduitGateway } from './produit.gateway';
-
+import { tb_produit_lot } from '@prisma/client';
 @Injectable()
 export class ProduitService {
 
@@ -380,14 +380,11 @@ export class ProduitService {
 
         return lotsAvecSomme;
     }
-
-
-
-
-
     async afficheListeLotParProduitInventaire() {
         const lots = await this.prisma.tb_produit_lot.findMany({
-            where: { statut_inventaire: 0 },
+            where: {
+                statut_inventaire: { in: [0, 2] },
+            },
             include: {
                 tb_produit: true,
                 users: true,
@@ -418,6 +415,7 @@ export class ProduitService {
                 prix_achat: lot.prix_achat,
                 id: lot.id,
                 idProduit: lot.produit_id,
+                quantiteTheorique: lot.quantite_theorique || 0,
                 user: lot.users,
             });
         });
@@ -427,7 +425,7 @@ export class ProduitService {
 
 
 
-    async mettreAJourQuantiteTheorique(lotId: number, quantiteLot: number, userId: number) {
+    async mettreAJourQuantiteTheorique(lotId: number, valeurradio: number, userId: number, quantiteTheorique: number) {
 
         // Récupérer le lot actuel
         const lot = await this.prisma.tb_produit_lot.findUnique({
@@ -437,15 +435,16 @@ export class ProduitService {
         if (!lot) {
             throw new Error('Lot non trouvé');
         }
-
+        console.log(quantiteTheorique);
         // Déterminer le statut_inventaire
-        const statut_inventaire = lot.quantite === Number(quantiteLot) ? 1 : 2;
-
+        //const statut_inventaire = lot.quantite === Number(quantiteLot) ? 1 : 2;
+        const statut_inventaire = Number(valeurradio) === Number(5) ? 1 : 2;
+        const qtefinanle = Number(quantiteTheorique) !== 0 || Number(quantiteTheorique) !== null || Number(quantiteTheorique) !== undefined ? Number(quantiteTheorique) : Number(lot.quantite);
         // Mettre à jour le lot
         const produitlot = await this.prisma.tb_produit_lot.update({
             where: { id: Number(lotId) },
             data: {
-                quantite_theorique: Number(quantiteLot),
+                quantite_theorique: Number(qtefinanle),
                 statut_inventaire: Number(statut_inventaire),
                 user_respo_id: userId ?? 0,
             },
@@ -613,6 +612,68 @@ export class ProduitService {
             },
         });
     }
+
+
+
+    // inventaire.service.ts
+    async updateMultipleLots(lots: Array<any>, userId: number) {
+        const results: tb_produit_lot[] = [];
+        console.log(lots);
+        for (const lot of lots) {
+            const lotId = Number(lot.lotId);
+            const quantiteTheorique = Number(lot.quantiteTheorique ?? 0);
+            const valeurRadio = Number(lot.valeurRadio);
+            // const userId = userId ?? 0;
+
+            // Vérifier si le lot existe
+            const lotExistant = await this.prisma.tb_produit_lot.findUnique({
+                where: { id: lotId }
+            });
+
+            if (!lotExistant) {
+                throw new Error(`Lot ${lotId} introuvable`);
+            }
+
+            // Déterminer le statut inventaire
+            // const statutInventaire = valeurRadio === 5 ? 1 : 2;
+            const statutInventaire =
+                valeurRadio === 5 ? 1 :
+                    valeurRadio === 6 ? 2 :
+                        valeurRadio === 7 ? 1 :
+                            0;
+            // Qte finale : si pas bon → quantité saisie, sinon → stock système
+            // const qteFinale =
+            //     valeurRadio === 5 ? lotExistant.quantite : quantiteTheorique;
+
+            const qteFinale =
+                valeurRadio === 5 ? lotExistant.quantite :
+                    valeurRadio === 6 ? quantiteTheorique :
+                        valeurRadio === 7 ? quantiteTheorique :
+                            0;
+            const qteFinaleValider =
+                valeurRadio === 5 ? lotExistant.quantite :
+                    valeurRadio === 6 ? lotExistant.quantite :
+                        valeurRadio === 7 ? quantiteTheorique :
+                            0;
+            const updated = await this.prisma.tb_produit_lot.update({
+                where: { id: lotId },
+                data: {
+                    quantite_theorique: qteFinale,
+                    statut_inventaire: statutInventaire,
+                    quantite: qteFinaleValider,
+                    user_respo_id: userId,
+                },
+            });
+
+            results.push(updated);
+        }
+
+        return {
+            message: "Lots mis à jour avec succès",
+            data: results,
+        };
+    }
+
 }
 
 

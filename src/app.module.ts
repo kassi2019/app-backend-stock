@@ -5,8 +5,6 @@ import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { TypeEquipementModule } from './type-equipement/type-equipement.module';
-
-
 import { RolesModule } from './roles/roles.module';
 import { TypeMouvementModule } from './type-mouvement/type-mouvement.module';
 import { MouvementModule } from './mouvement/mouvement.module';

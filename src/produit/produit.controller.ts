@@ -146,7 +146,7 @@ export class ProduitController {
         @Param('codeBarre') codeBarre: string,
         @Req() req: any
     ) {
-        console.log({codeBarre})
+        console.log({ codeBarre })
         const userId = req.user.sub;
         const result = await this.produitService.enregistrerProduitSortantProvisoire(codeBarre, userId);
         return {
@@ -197,14 +197,15 @@ export class ProduitController {
     // }
 
 
-    @Get("miseAjourQuantite/:idlot/:quantiteLot")
+    @Get("miseAjourQuantite/:idlot/:valeurradio/:quantiteTheorique")
     async getmettreAJourQuantite(
         @Param("idlot") idlot: number,
-        @Param('quantiteLot') quantiteLot: number,
+        @Param('valeurradio') valeurradio: number,
+        @Param('quantiteTheorique') quantiteTheorique: number,
         @Req() req: any
     ) {
         const userId = req.user.sub;
-        const result = await this.produitService.mettreAJourQuantiteTheorique(idlot, quantiteLot, userId);
+        const result = await this.produitService.mettreAJourQuantiteTheorique(idlot, valeurradio, userId, quantiteTheorique);
         return {
             statusCode: HttpStatus.OK,
             message: 'Modification réussie',
@@ -298,6 +299,13 @@ export class ProduitController {
     @Delete('multiple')
     async deleteMultiple(@Body() body: { ids: number[] }) {
         return this.produitService.deleteProduitsCochetTemporels(body.ids);
+    }
+
+
+    @Post('update-multiple')
+    async updateMultipleLots(@Body() body: any, @Req() req: any) {
+        const userId = req.user.sub;
+        return this.produitService.updateMultipleLots(body.lots, userId);
     }
 }
 
